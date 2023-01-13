@@ -1,86 +1,81 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct adjacencia {
-    int vertice; 
-    struct adjacencia *prox; 
-} ADJACENCIA;
+
+typedef struct grafo
+{
+    int numero_vertices;
+    int grau_max; //maximo de arestas que vao ser definidas no input
+    int** arestas; //matriz: linha=vertice coluna=arestas
+    int* grau; //verifica quais ja foram inseridos e as prox posicoes vagas
+}Grafo;
 
 
-typedef struct vertice {
-    ADJACENCIA *inicio; 
-}VERTICE;
+Grafo* cria_Grafo(int numero_vertices, int grau_max)
+{
+    Grafo *gr = (Grafo*) malloc(sizeof(struct grafo));
+    
+    gr->numero_vertices = numero_vertices;
+    gr->grau_max = grau_max;
+    gr->grau = (int*) calloc(numero_vertices,sizeof(int)); //inicia com grau 0
 
+    gr->arestas = (int**) malloc(numero_vertices * sizeof(int*));
+    
+    for(int i=0; i<numero_vertices; i++)
+        //cada posicao possui uma lista de adjacencia que tem um tamanho de grau max
+        gr->arestas[i] = (int*) malloc(grau_max * sizeof(int)); 
 
-typedef struct grafo {
-    int vertices; 
-    VERTICE *vet; 
-}GRAFO;
-
-
-/*criar um GRAFO*/
-GRAFO *criarGrafo (int v) {
-	GRAFO *grafo = (GRAFO *)malloc(sizeof(GRAFO)); 
-	grafo->vertices = v; 
-	grafo->vet = (VERTICE *)malloc(v*sizeof(VERTICE)); 
-	
-  for (int i=1; i<=v; i++)
-		grafo->vet[i].inicio = NULL; 
-	
-	return(grafo);
+    return gr;
 }
 
 
-/*adicionar arestas no GRAFO*/
-ADJACENCIA *AdicionarAresta(int vertice){ 
-	ADJACENCIA *temp = (ADJACENCIA *) malloc (sizeof(ADJACENCIA)); 
-	temp->vertice = vertice; 
-	temp->prox = NULL; 
-	return(temp); 
+int inserirArestas(Grafo* gr, int ini, int fim)
+{
+    if(gr == NULL) 
+        return 0;
+    //verifica se o vertice eh valido
+    if(ini < 0 || ini >= gr->numero_vertices)
+        return 0;
+    if(fim < 0 || fim >= gr->numero_vertices)
+        return 0;
+
+    //insere no fim da linha
+    gr->arestas[ini][gr->grau[ini]] = fim;
+    gr->grau[ini]++;
+
+    return 1;
 }
 
 
-/*adicionar arestas no GRAFO*/
-int criarAresta(GRAFO *grafo, int vertice_ini, int vertice_final) { 
-	if(!grafo) return (0);   
-	if((vertice_final<0)||(vertice_final >= grafo->vertices))return(0); 
-	if((vertice_ini<0)||(vertice_final >= grafo->vertices))return(0); 
-	
-	ADJACENCIA *novo = AdicionarAresta(vertice_final); 
-	novo->prox = grafo->vet[vertice_ini].inicio; 
-	grafo->vet[vertice_ini].inicio = novo; 
-	return (1);
-}
+void imprimirGrafo(Grafo *gr)
+{
+    if(gr == NULL)
+        return;
 
-
-/*Imprimir lista de os vertices adjacentes*/
-void imprime(GRAFO *grafo){
-	for(int i=1; i <= grafo->vertices; i++){
-		ADJACENCIA *adj = grafo->vet[i].inicio; 
-    printf("\n Lista de adjacência do vértice %d\n Inicio ", i);
-			
-      while(adj){ 
-				printf("-> %d ", adj->vertice);
-				adj = adj->prox; 
-			}
-		printf("\n");	
-	}
+    for(int i=0; i < gr->numero_vertices; i++)
+    {
+        printf(" %d: ", i);
+        for(int j=0; j < gr->grau[i]; j++)
+            printf("-> %d ", gr->arestas[i][j]);
+        
+        printf("\n");
+    }
 }
 
 
 int main(){
-	
-	GRAFO * grafo = criarGrafo(6);
-	criarAresta(grafo, 1, 2);
-	criarAresta(grafo, 1, 3);
-	criarAresta(grafo, 2, 4);
-	criarAresta(grafo, 2, 7);
-	criarAresta(grafo, 3, 1);
-	criarAresta(grafo, 4, 3);
-	criarAresta(grafo, 5, 2);
-	criarAresta(grafo, 6, 1);
-	criarAresta(grafo, 6, 4);
 
+    Grafo* gr = cria_Grafo(5, 5);
+
+    inserirArestas(gr, 0, 1);
+    inserirArestas(gr, 1, 3);
+    inserirArestas(gr, 1, 2);
+    inserirArestas(gr, 2, 4);
+    inserirArestas(gr, 3, 0);
+    inserirArestas(gr, 3, 4);
+    inserirArestas(gr, 4, 1);
+
+    imprimirGrafo(gr);
     
-  imprime(grafo);
+    return 0;
 }
