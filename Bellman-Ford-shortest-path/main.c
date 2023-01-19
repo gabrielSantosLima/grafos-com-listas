@@ -1,206 +1,232 @@
-#/* C Program to find Shortest Path using Bellman Ford Algorithm */
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <stdbool.h>
 
-#include<stdio.h>
-#include<stdlib.h>
 
-#define MAX 100
-#define infinity 9999
-#define NIL -1
-#define TRUE 1
-#define FALSE 0
-
-int n;    /*Number of vertices in the graph*/
-int adj[MAX][MAX]; /*Adjacency Matrix*/
-
-int predecessor[MAX];
-int pathLength[MAX];
-int isPresent_in_queue[MAX];
-
-int front,rear;
-int queue[MAX];
-void initialize_queue( );
-void insert_queue(int u);
-int delete_queue();
-int isEmpty_queue();
-void create_graph( );
-void findPath(int s, int v);
-int BellmanFord(int s);
-
-int main()
+typedef struct edge
 {
-        int flag,s,v;
 
-        create_graph();
+    size_t end_vertex;
+    int weight;
 
-        printf("\nEnter source vertex : ");
-        scanf("%d",&s);
+    struct edge* next;
 
-        flag = BellmanFord(s);
-
-        if(flag == -1)
-        {
-                printf("\nError : negative cycle in Graph\n");
-                exit(1);
-        }
-
-        while(1)
-        {
-                printf("\nEnter destination vertex(-1 to quit): ");
-                scanf("%d",&v);
-                if(v == -1)
-                        break;
-                if(v < 0 || v >= n )
-                        printf("\nThis vertex does not exist\n");
-                else if(v == s)
-                        printf("\nSource and destination vertices are same\n");
-                else if( pathLength[v] == infinity )
-            printf("\nThere is no path from source to destination vertex\n");
-                else
-                        findPath(s,v);
-        }
-        return 0;
-}/*End of main()*/
+} Edge;
 
 
-void findPath(int s, int v )
+typedef struct graph
 {
-        int i,u;
-        int path[MAX];          /*stores the shortest path*/
-        int shortdist = 0;      /*length of shortest path*/
-        int count = 0;          /*number of vertices in the shortest path*/
 
-        /*Store the full path in the array path*/
-        while( v != s )
-        {
-                count++;
-                path[count] = v;
-                u = predecessor[v];
-                shortdist += adj[u][v];
-                v = u;
-        }
-        count++;
-        path[count]=s;
+    // e points to the adjacency list representation of the graph.
+    Edge** e;
 
-        printf("\nShortest Path is : ");
-        for(i=count; i>=1; i--)
-                printf("%d  ",path[i]);
-        printf("\n Shortest distance is : %d\n", shortdist);
-}/*End of findPath()*/
+    // n is the number of vertices.
+    size_t n;
 
-int BellmanFord(int s)
+    // s is the source vertex.
+    size_t s;
+
+    // dist stores the shortest distance estimates from s to the other vertices.
+    int* dist;
+
+    // pre stores the shortest path predecessors of the vertices.
+    size_t* pre;
+
+} Graph;
+
+
+void take_input_from_user_and_create_graph(Graph*);
+bool bellman_ford(Graph*);
+void print_shortest_paths(Graph*);
+void print_shortest_path_from_s_to_t(Graph*, size_t);
+void free_graph(Graph*);
+
+
+int main(void)
 {
-        int k = 0,i,current;
 
-        for(i=0;i<n;i++)
+    Graph g;
+    take_input_from_user_and_create_graph(&g);
+
+    if (bellman_ford(&g))
+        print_shortest_paths(&g);
+    else
+        printf("\nError: Negative-weight cycle reachable from source exists\n");
+
+    free_graph(&g);
+
+    return 0;
+
+}
+
+
+void take_input_from_user_and_create_graph(Graph* ptr_g)
+{
+
+    printf("Enter the number of vertices: ");
+    scanf("%zu", &((ptr_g)->n));
+
+    printf("Enter the source vertex (vertex numbering begins from 0): ");
+    scanf("%zu", &((ptr_g)->s));
+
+    (ptr_g)->e = calloc((ptr_g)->n, sizeof (Edge*));
+    if ((ptr_g)->e == NULL)
+    {
+        fprintf(stderr, "Unsuccessful allocation\n");
+        exit(EXIT_FAILURE);
+    }
+
+    (ptr_g)->dist = malloc(((ptr_g)->n) * sizeof(int));
+    if ((ptr_g)->dist == NULL)
+    {
+        fprintf(stderr, "Unsuccessful allocation\n");
+        exit(EXIT_FAILURE);
+    }
+
+    (ptr_g)->pre = malloc(((ptr_g)->n) * sizeof(size_t));
+    if ((ptr_g)->pre == NULL)
+    {
+        fprintf(stderr, "Unsuccessful allocation\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("\nEnter edges (q to quit) :-\n");
+    printf("(0 2 5 means an edge from vertex 0 to vertex 2 of weight 5)\n\n");
+
+    while (true)
+    {
+        size_t start_vertex, end_vertex;
+        int weight;
+
+        printf(">>> ");
+        if (scanf("%zu %zu %d",&(start_vertex),&(end_vertex),&(weight)) != 3)
+            break;
+
+        Edge* ptr_current_edge = malloc(sizeof (Edge));
+        if (ptr_current_edge == NULL)
         {
-                predecessor[i] = NIL;
-                pathLength[i] = infinity;
-                isPresent_in_queue[i] = FALSE;
+            fprintf(stderr, "Unsuccessful allocation\n");
+            exit(EXIT_FAILURE);
         }
 
-        initialize_queue( );
-        pathLength[s] = 0; /*Make pathLength of source vertex 0*/
-        insert_queue(s); /*Insert the source vertex in the queue*/
-    isPresent_in_queue[s] = TRUE;
-        while( !isEmpty_queue( ) )
+        (ptr_current_edge)->end_vertex = end_vertex;
+        (ptr_current_edge)->weight = weight;
+
+        (ptr_current_edge)->next = ((ptr_g)->e)[start_vertex];
+        ((ptr_g)->e)[start_vertex] = ptr_current_edge;
+    }
+
+}
+
+
+bool bellman_ford(Graph* ptr_g)
+{
+
+    for (size_t t = 0; t < ((ptr_g)->n); t++)
+        ((ptr_g)->dist)[t] = INT_MAX;
+    ((ptr_g)->dist)[(ptr_g)->s] = 0;
+
+    for (size_t i = 0; i < (((ptr_g)->n) - 1); i++)
+    {
+        for (size_t u = 0; u < ((ptr_g)->n); u++)
         {
-                current = delete_queue( );
-                isPresent_in_queue[current] = FALSE;
-                if(s == current)
-                        k++;
-                if(k > n )
-                        return -1;/*Negative cycle reachable from source vertex*/
-                for(i=0;i<n;i++)
+            Edge* ptr_current_edge = ((ptr_g)->e)[u];
+
+            while (ptr_current_edge)
+            {
+                size_t v = ((ptr_current_edge)->end_vertex);
+                int weight = ((ptr_current_edge)->weight);
+
+                if ((((ptr_g)->dist)[u] != INT_MAX) &&
+                        (((ptr_g)->dist)[v] > (((ptr_g)->dist)[u] + weight)))
                 {
-                        if ( adj[current][i] != 0 )
-                                if( pathLength[i] > pathLength[current] + adj[current][i] )
-                                {
-                                        pathLength[i] = pathLength[current] + adj[current][i];
-                                        predecessor[i] = current;
-                                        if( !isPresent_in_queue[i] )
-                                        {
-                                                insert_queue(i);
-                                                isPresent_in_queue[i]=TRUE;
-                                        }
-                                }
+                    ((ptr_g)->dist)[v] = (((ptr_g)->dist)[u] + weight);
+                    ((ptr_g)->pre)[v] = u;
                 }
+
+                ptr_current_edge = ((ptr_current_edge)->next);
+            }
         }
-        return 1;
-}/*End of BellmanFord()*/
+    }
 
-void initialize_queue( )
-{
-        int i;
-        for(i=0;i<MAX;i++)
-                queue[i] = 0;
-        rear = -1;front = -1;
-}/*End of initailize_queue()*/
+    for (size_t u = 0; u < ((ptr_g)->n); u++)
+    {
+        Edge* ptr_current_edge = ((ptr_g)->e)[u];
 
-int isEmpty_queue()
+        while (ptr_current_edge)
+        {
+            size_t v = ((ptr_current_edge)->end_vertex);
+            int weight = ((ptr_current_edge)->weight);
+
+            if ((((ptr_g)->dist)[u] != INT_MAX) &&
+                    (((ptr_g)->dist)[v] > (((ptr_g)->dist)[u] + weight)))
+            {
+                return false;
+            }
+
+            ptr_current_edge = ((ptr_current_edge)->next);
+        }
+    }
+
+    return true;
+
+}
+
+
+void print_shortest_paths(Graph* ptr_g)
 {
-        if(front == -1 || front>rear )
-                return 1;
+
+    printf("\nShortest paths :-\n");
+
+    for (size_t t = 0; t < ((ptr_g)->n); t++)
+    {
+        if (((ptr_g)->dist)[t] != INT_MAX)
+        {
+            printf("%zu to %zu (shortest distance = %3d): ", (ptr_g)->s, t,
+                   ((ptr_g)->dist)[t]);
+            print_shortest_path_from_s_to_t(ptr_g, t);
+            putchar('\n');
+        }
+
         else
-                return 0;
- }/*End of isEmpty_queue()*/
+        {
+            printf("%zu to %zu (shortest distance = N/A): N/A\n",(ptr_g)->s,t);
+        }
+    }
 
-void insert_queue(int added_item)
+}
+
+
+void print_shortest_path_from_s_to_t(Graph* ptr_g, size_t t)
 {
-        if (rear == MAX-1)
-        {
-                printf("\nQueue Overflow\n");
-                exit(1);
-        }
-        else
-        {
-                if (front == -1)  /*If queue is initially empty */
-                        front = 0;
-                rear = rear+1;
-                queue[rear] = added_item ;
-        }
-}/*End of insert_queue()*/
 
-int delete_queue()
+    if ((ptr_g)->s != t)
+        print_shortest_path_from_s_to_t(ptr_g, ((ptr_g)->pre)[t]);
+
+    printf("%zu ", t);
+
+}
+
+
+void free_graph(Graph* ptr_g)
 {
-        int d;
-        if (front == -1 || front > rear)
+
+    for (size_t i = 0; i < ((ptr_g)->n); i++)
+    {
+        Edge* ptr_current_edge = ((ptr_g)->e)[i];
+
+        while (ptr_current_edge)
         {
-                printf("\nQueue Underflow\n");
-                exit(1);
+            Edge* temp = (ptr_current_edge)->next;
+            free(ptr_current_edge);
+            ptr_current_edge = temp;
         }
-        else
-        {
-                d = queue[front];
-                front=front+1;
-        }
-        return d;
-}/*End of delete_queue() */
+    }
 
-void create_graph()
-{
-        int i,max_edges,origin,destin, wt;
+    free((ptr_g)->e);
 
-        printf("\nEnter number of vertices : ");
-        scanf("%d",&n);
-        max_edges=n*(n-1);
+    free((ptr_g)->dist);
+    free((ptr_g)->pre);
 
-        for(i=1;i<=max_edges;i++)
-        {
-                printf("\nEnter edge %d( -1 -1 to quit ) : ",i);
-                scanf("%d %d",&origin,&destin);
-
-                if( (origin == -1) && (destin == -1) )
-                        break;
-
-                printf("\nEnter weight for this edge : ");
-                scanf("%d",&wt);
-
-                if( origin >= n || destin >= n || origin<0 || destin<0)
-                {
-                        printf("\nInvalid edge!\n");
-                        i--;
-                }
-                else
-                        adj[origin][destin] = wt;
-        }
 }
