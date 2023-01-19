@@ -1,0 +1,17 @@
+Algoritmo de Kahn (gráfico)
+ 
+L —> Uma lista vazia que conterá os elementos ordenados
+S —> Um conjunto de todos os vértices sem arestas de entrada (ou seja, com indegree 0)
+ 
+enquanto S não é vazio faça
+    remover um vértice n de S
+    adicione n à cauda de L
+    para cada vértice m com uma aresta e de n a m faça
+        remova a aresta e do gráfico
+        se m não tem outras arestas de entrada, então insira m em S
+            insira m em S
+ 
+se o grafo tem arestas então
+    relatório de retorno “grafo tem pelo menos um ciclo”
+senão
+    return L “uma ordem ordenada topologicamente”
