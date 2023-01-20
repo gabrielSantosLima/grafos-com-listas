@@ -1,77 +1,117 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Representa um no da lista de adjacencia
+typedef struct no_lista
+{
+    int destino;
+    struct no_lista *prox;
+} no_lista;
+
+// Representa uma lista de adjacencia
+typedef struct lista_adjacencia
+{
+    int tamanho;
+    struct no_lista *inicio;
+} lista_adjacencia;
+
+// Representa um grafo. Um grafo é um array da lista de adjacencia
 typedef struct grafo
 {
-    int numero_vertices;
-    int grau_max;  // maximo de arestas que vao ser definidas no input
-    int **arestas; // matriz: linha=vertice coluna=arestas
-    int *grau;     // verifica quais ja foram inseridos e as prox posicoes vagas
-} Grafo;
+    int tamanho; // tamanho do grafo
+    struct lista_adjacencia *vetor;
+} grafo;
 
-Grafo *cria_Grafo(int numero_vertices, int grau_max)
+// função para criar novo no
+no_lista *criar_novo_no(int destino)
 {
-    Grafo *gr = (Grafo *)malloc(sizeof(struct grafo));
-
-    gr->numero_vertices = numero_vertices;
-    gr->grau_max = grau_max;
-    gr->grau = (int *)calloc(numero_vertices, sizeof(int)); // inicia com grau 0
-
-    gr->arestas = (int **)malloc(numero_vertices * sizeof(int *));
-
-    for (int i = 0; i < numero_vertices; i++)
-        // cada posicao possui uma lista de adjacencia que tem um tamanho de grau max
-        gr->arestas[i] = (int *)malloc(grau_max * sizeof(int));
-
-    return gr;
+    no_lista *novoNo = (no_lista *)malloc(sizeof(no_lista));
+    novoNo->destino = destino;
+    novoNo->prox = NULL;
+    return novoNo;
 }
 
-int inserirArestas(Grafo *gr, int ini, int fim)
+// função para criar grafo
+grafo *criar_grafo(int tamanho)
 {
-    if (gr == NULL)
-        return 0;
-    // verifica se o vertice eh valido
-    if (ini < 0 || ini >= gr->numero_vertices)
-        return 0;
-    if (fim < 0 || fim >= gr->numero_vertices)
-        return 0;
+    grafo *novo_grafo = (grafo *)malloc(sizeof(grafo));
+    novo_grafo->tamanho = tamanho;
 
-    // insere no fim da linha
-    gr->arestas[ini][gr->grau[ini]] = fim;
-    gr->grau[ini]++;
+    // criar um array da lista de adjacencia
+    novo_grafo->vetor = (lista_adjacencia *)malloc(tamanho * sizeof(lista_adjacencia));
 
-    return 1;
+    for (int i = 0; i < tamanho; i++)
+        novo_grafo->vetor[i].inicio = NULL;
+
+    return novo_grafo;
 }
 
-void imprimirGrafo(Grafo *gr)
+// Função para adicionar arestas na lista
+void adicionar_arestas(grafo *cgrafo, int ponto, int destino)
 {
-    if (gr == NULL)
-        return;
 
-    for (int i = 0; i < gr->numero_vertices; i++)
+    no_lista *checar = NULL;
+    no_lista *novo_no = criar_novo_no(destino);
+
+    if (cgrafo->vetor[ponto].inicio == NULL)
     {
-        printf(" %d: ", i);
-        for (int j = 0; j < gr->grau[i]; j++)
-            printf("-> %d ", gr->arestas[i][j]);
+        novo_no->prox = cgrafo->vetor[ponto].inicio;
+        cgrafo->vetor[ponto].inicio = novo_no;
+    }
+    else
+    {
+        checar = cgrafo->vetor[ponto].inicio;
+        while (checar->prox != NULL)
+            checar = checar->prox;
+        checar->prox = novo_no;
+    }
 
+    // adicionar arestas do destino ate o ponto
+    novo_no = criar_novo_no(ponto);
+    if (cgrafo->vetor[destino].inicio == NULL)
+    {
+        novo_no->prox = cgrafo->vetor[destino].inicio;
+        cgrafo->vetor[destino].inicio = novo_no;
+    }
+    else
+    {
+        checar = cgrafo->vetor[destino].inicio;
+        while (checar->prox != NULL)
+            checar = checar->prox;
+        checar->prox = novo_no;
+    }
+}
+
+// Imprimir a lista de adjacencia representando o grafo
+void imprimirGrafo(grafo *Grafo)
+{
+    for (int i = 0; i < Grafo->tamanho; i++)
+    {
+        no_lista *add = Grafo->vetor[i].inicio;
+        printf("\n lista de adjacencia do vertice %d\n head ", i);
+
+        while (add)
+        {
+            printf("-> %d", add->destino);
+            add = add->prox;
+        }
         printf("\n");
     }
 }
 
 int main()
 {
+    int tamanho = 5;
+    grafo *Grafo = criar_grafo(tamanho);
+    adicionar_arestas(Grafo, 0, 1);
+    adicionar_arestas(Grafo, 0, 4);
+    adicionar_arestas(Grafo, 1, 2);
+    adicionar_arestas(Grafo, 1, 3);
+    adicionar_arestas(Grafo, 1, 4);
+    adicionar_arestas(Grafo, 2, 3);
+    adicionar_arestas(Grafo, 3, 4);
 
-    Grafo *gr = cria_Grafo(5, 5);
-
-    inserirArestas(gr, 0, 1);
-    inserirArestas(gr, 1, 3);
-    inserirArestas(gr, 1, 2);
-    inserirArestas(gr, 2, 4);
-    inserirArestas(gr, 3, 0);
-    inserirArestas(gr, 3, 4);
-    inserirArestas(gr, 4, 1);
-
-    imprimirGrafo(gr);
+    imprimirGrafo(Grafo);
 
     return 0;
 }
