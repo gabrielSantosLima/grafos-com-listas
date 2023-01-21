@@ -78,12 +78,12 @@ void DFS(grafo* Grafo, int destino) {
 int main() {
   grafo* Grafo = criarGrafo(4);
   
-  adicionarArestas(Grafo, 0, 1);
+  adicionarArestas(Grafo, 0, 3);
   adicionarArestas(Grafo, 0, 2);
-  adicionarArestas(Grafo, 1, 2);
-  adicionarArestas(Grafo, 2, 3);
+  adicionarArestas(Grafo, 0, 1);
+  adicionarArestas(Grafo, 2, 4);
 
-  DFS(Grafo, 2);
+  DFS(Grafo, 0);
 
   return 0;
 }
