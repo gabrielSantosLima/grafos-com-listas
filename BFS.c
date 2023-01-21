@@ -2,105 +2,161 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#define SIZE 40
 
-typedef struct grafo
-{
-    int numero_vertices;
-    int grau_max;  // maximo de arestas que vao ser definidas no input
-    int **arestas; // matriz: linha=vertice coluna=arestas
-    int *grau;     // verifica quais ja foram inseridos e as prox posicoes vagas
-} Grafo;
+typedef struct fila {
+  int itens[SIZE];
+  int inicio;
+  int fim;
+} fila;
 
-Grafo *cria_Grafo(int numero_vertices, int grau_max)
-{
-    Grafo *gr = (Grafo *)malloc(sizeof(struct grafo));
 
-    gr->numero_vertices = numero_vertices;
-    gr->grau_max = grau_max;
-    gr->grau = (int *)calloc(numero_vertices, sizeof(int)); // inicia com grau 0
+typedef struct no_lista {
+  int destino;
+  struct no_lista* prox;
+} no_lista;
 
-    gr->arestas = (int **)malloc(numero_vertices * sizeof(int *));
 
-    for (int i = 0; i < numero_vertices; i++)
-        // cada posicao possui uma lista de adjacencia que tem um tamanho de grau max
-        gr->arestas[i] = (int *)malloc(grau_max * sizeof(int));
+typedef struct grafo {
+  int tamanho;
+  int* visitado;
+  no_lista** lista_adj;
+} grafo;
 
-    return gr;
+
+// Criar uma fila
+fila* criarFila() {
+  fila* f = malloc(sizeof(fila));
+  f->inicio = -1;
+  f->fim = -1;
+  return f;
 }
 
-int inserirArestas(Grafo *gr, int ini, int fim)
-{
-    if (gr == NULL)
-        return 0;
-    // verifica se o vertice eh valido
-    if (ini < 0 || ini >= gr->numero_vertices)
-        return 0;
-    if (fim < 0 || fim >= gr->numero_vertices)
-        return 0;
-
-    // insere no fim da linha
-    gr->arestas[ini][gr->grau[ini]] = fim;
-    gr->grau[ini]++;
-
+// Checar se a fila esta vazia
+int filaVazia(fila* f) {
+  if (f->fim == -1)
     return 1;
-}
-
-void buscaLargura_Grafo(Grafo *gr, int ini, int *visitado)
-{
-    int i, vert, NV, cont = 1;
-    int *fila, inicio_fila = 0, fim_fila = 0;
-
-    // marcar vertices como nao visitados
-    for (i = 0; i < gr->numero_vertices; i++)
-        visitado[i] = 0;
-
-    NV = gr->numero_vertices;
-    fila = (int *)malloc(NV * sizeof(int));
-    fim_fila++;
-
-    // coloca o vertice ini no fim da fila e marca como visitado
-    fila[fim_fila] = ini;
-    visitado[ini] = cont;
-
-    // equanto a fila nao estiver vazia
-    while (inicio_fila != fim_fila)
-    {
-        // pega o primeiro da fila
-        inicio_fila = (inicio_fila + 1) % NV; // (1+1)%2 = 0
-        vert = fila[inicio_fila];
-        cont++;
-
-        // visita os vizinhos nao visitados e coloca na fila
-        for (i = 0; i < gr->grau[vert]; i++)
-        {
-            if (!visitado[gr->arestas[vert][i]])
-            {
-                fim_fila = (fim_fila + 1) % NV;
-                fila[fim_fila] = gr->arestas[vert][i]; //(5+1) % 2 = 0
-                // marca como visitado
-                visitado[gr->arestas[vert][i]] = cont;
-            }
-        }
-    }
-    for (i = 0; i < gr->numero_vertices; i++)
-        printf("%d -> %d\n", i, visitado[i]);
-}
-
-int main()
-{
-
-    Grafo *gr = cria_Grafo(5, 5);
-
-    inserirArestas(gr, 0, 1);
-    inserirArestas(gr, 1, 3);
-    inserirArestas(gr, 1, 2);
-    inserirArestas(gr, 2, 4);
-    inserirArestas(gr, 3, 0);
-    inserirArestas(gr, 3, 4);
-    inserirArestas(gr, 4, 1);
-
-    int vis[5]; // vetor para marcar a ordem que os vertices foram visitados
-    buscaLargura_Grafo(gr, 0, vis);
-
+  else
     return 0;
+}
+
+// adicionar elementos na fila
+void enfileirar(fila* f, int valor) {
+  if (f->fim == SIZE - 1)
+    printf("\nFila esta cheia!");
+  else {
+    if (f->inicio == -1)
+      f->inicio = 0;
+    f->fim++;
+    f->itens[f->fim] = valor;
+  }
+}
+
+// Removendo elementos da fila
+int desenfileirar(fila* f) {
+  int item;
+  if (filaVazia(f)) {
+    printf("Fila esta vazia");
+    item = -1;
+  } else {
+    item = f->itens[f->inicio];
+    f->inicio++;
+    if (f->inicio > f->fim) {
+      printf("Resetando a fila \n");
+      f->inicio = f->fim = -1;
+    }
+  }
+  return item;
+}
+
+// imprimindo fila
+void imprimirFila(fila* f) {
+  int i = f->inicio;
+
+  if (filaVazia(f)) {
+    printf("Fila esta vazia");
+  } else {
+    printf("\nFila contem: ");
+    for (i = f->inicio; i < f->fim + 1; i++) {
+      printf("%d ", f->itens[i]);
+    }
+    printf("\n");
+  }
+}
+
+
+// Função para criar novo no
+no_lista* novoNo(int valor) {
+  no_lista* novo_no = malloc(sizeof(no_lista));
+  novo_no->destino = valor;
+  novo_no->prox = NULL;
+  return novo_no;
+}
+
+
+// Função para criar grafo
+grafo* criarGrafo(int tamanho) {
+  grafo* Grafo = malloc(sizeof(grafo));
+  Grafo->tamanho = tamanho;
+
+  Grafo->lista_adj = malloc(tamanho * sizeof(no_lista*));
+  Grafo->visitado = malloc(tamanho * sizeof(int));
+
+  for (int i = 0; i < tamanho; i++) {
+    Grafo->lista_adj[i] = NULL;
+    Grafo->visitado[i] = 0;
+  }
+  return Grafo;
+}
+
+// Adicionar arestas
+void adicionarArestas(grafo* Grafo, int ponto, int destino) {
+  no_lista* novo_no = novoNo(destino);
+  novo_no->prox = Grafo->lista_adj[ponto];
+  Grafo->lista_adj[ponto] = novo_no;
+
+  // Add aresta de destino ate o ponto
+  novo_no = novoNo(ponto);
+  novo_no->prox = Grafo->lista_adj[destino];
+  Grafo->lista_adj[destino] = novo_no;
+}
+
+
+// Função do BFS
+void BFS(grafo* Grafo, int ini_vert) {
+  fila* f = criarFila();
+  Grafo->visitado[ini_vert] = 1;
+  enfileirar(f, ini_vert);
+
+  while (!filaVazia(f)) {
+    imprimirFila(f);
+    int atual_vert = desenfileirar(f);
+    printf("Visitado %d\n", atual_vert);
+
+    no_lista* temp = Grafo->lista_adj[atual_vert];
+
+    while (temp) {
+      int adj_vert = temp->destino;
+
+      if (Grafo->visitado[adj_vert] == 0) {
+        Grafo->visitado[adj_vert] = 1;
+        enfileirar(f, adj_vert);
+      }
+      temp = temp->prox;
+    }
+  }
+}
+
+
+
+int main() {
+  grafo* Grafo = criarGrafo(5);
+  adicionarArestas(Grafo, 0, 3);
+  adicionarArestas(Grafo, 0, 2);
+  adicionarArestas(Grafo, 0, 1);
+  adicionarArestas(Grafo, 2, 4);
+
+  BFS(Grafo, 0);
+
+  return 0;
 }
