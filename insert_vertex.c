@@ -95,7 +95,6 @@ void insert_vertex(graph *ngraph, int vertex)
     if (ngraph->data[vertex] != NULL)
         return;
     ngraph->data[vertex] = create_list();
-    printf("%d ", ngraph->data[vertex]->length);
 }
 
 void insert_edge(graph *ngraph, int vertex1, int vertex2)
