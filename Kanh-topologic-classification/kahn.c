@@ -3,235 +3,123 @@
 #define true 1
 #define false 0
 
-typedef int bool;
 
-typedef struct INDEGREE
+typedef struct NO
 {
-    int grau;
-    struct INDEGREE *prox;
-} INDEGREE;
-
-// função para criar novo degree
-INDEGREE *criar_indegree(int grau)
-{
-    INDEGREE *indegree = (INDEGREE *)malloc(sizeof(INDEGREE));
-    indegree->grau = grau;
-    indegree->prox = NULL;
-    return indegree;
-}
-
-INDEGREE *adicionar_grau(INDEGREE *vetor, int grau)
-{
-    INDEGREE *initialdegree = vetor;
-
-    if(!vetor)
-    {
-        INDEGREE *newDegree = criar_indegree(grau);
-        return newDegree;
-    }
-
-    while(vetor->prox != NULL)
-    {
-        vetor = vetor->prox;
-    }
-
-    INDEGREE *newDegree = criar_indegree(grau);
-    vetor->prox = newDegree;
-    return initialdegree;
-}
-
-void inicializar_degree(INDEGREE *indegree, int tamanho)
-{
-
-    for (int i = 0; i < tamanho; i++)
-    {
-        if (!indegree)
-        {
-
-            indegree = criar_indegree(0);
-        }
-        else
-        {
-            adicionar_grau(indegree, 0);
-        }
-    }
-
-}
-
-int getSize(INDEGREE *indegree)
-{
-    int size = 0;
-
-    while (indegree != NULL)
-    {
-        size++;
-        indegree = indegree->prox;
-    }
-    return size;
-}
-
-bool isEmpty(INDEGREE *indegree)
-{
-    return getSize(indegree) == 0;
-}
-
-// ================  INDEGREE  ====================
-
-
-
-// Representa um no da lista de adjacencia
-typedef struct no_lista
-{
+    int fonte;
     int destino;
-    struct no_lista *prox;
-} no_lista;
+    int peso;
+    struct NO *prox;
+} NO;
 
-// Representa uma lista de adjacencia
-typedef struct lista_adjacencia
+typedef struct vertice
+{
+    int valor;
+    NO *adj_list;
+} vertice;
+
+typedef struct GRAFO
 {
     int tamanho;
-    struct no_lista *inicio;
-} lista_adjacencia;
-
-// Representa um grafo. Um grafo é um array da lista de adjacencia
-typedef struct grafo
-{
-    int tamanho; // tamanho do grafo
-    struct lista_adjacencia *vetor;
-} grafo;
-
-// função para criar novo no
-no_lista *criar_novo_no(int destino)
-{
-    no_lista *novoNo = (no_lista *)malloc(sizeof(no_lista));
-    novoNo->destino = destino;
-    novoNo->prox = NULL;
-    return novoNo;
-}
+    vertice **lista_vertices;
+} GRAFO;
 
 // função para criar grafo
-grafo *criar_grafo(int tamanho)
+GRAFO *createGraph(int vertices)
 {
-    grafo *novo_grafo = (grafo *)malloc(sizeof(grafo));
-    novo_grafo->tamanho = tamanho;
+    GRAFO *graph = (GRAFO *)malloc(sizeof(GRAFO));
+    graph->tamanho = vertices;
 
-    // criar um array da lista de adjacencia (quantidade de vertices definida)
-    novo_grafo->vetor = (lista_adjacencia *)malloc(tamanho * sizeof(lista_adjacencia));
+    graph->lista_vertices = (vertice **)malloc(vertices * sizeof(vertice*));
 
-    // laço para percorrer a lista de adjacência de um grafo
-    for (int i = 0; i < tamanho; i++)
-        // aqui se define que o vetor não possui vértices 
-        novo_grafo->vetor[i].inicio = NULL;
+    for (int i = 0; i < vertices; i++)
+    {
+        graph->lista_vertices[i]->adj_list = NULL;
+    }
 
-    return novo_grafo;
+    return graph;
 }
 
-// Função para adicionar arestas na lista
-void adicionar_arestas(grafo *cgrafo, int ponto, int destino)
+void addEdge(GRAFO *graph, int src, int dest)
 {
-
-    no_lista *checar = NULL;
-    no_lista *novo_no = criar_novo_no(destino);
-
-    if (cgrafo->vetor[ponto].inicio == NULL)
-    {
-        novo_no->prox = cgrafo->vetor[ponto].inicio;
-        cgrafo->vetor[ponto].inicio = novo_no;
-    }
-    else
-    {
-        // checar recebe a lista de adjacência referente ao ponto e percorre-a
-        checar = cgrafo->vetor[ponto].inicio;
-
-        // avancça até o fim
-        while (checar->prox != NULL)
-            checar = checar->prox;
-        
-        // checar aponta para o novo nó
-        checar->prox = novo_no;
-    }
-
-    // adicionar arestas do destino ate o ponto
-    novo_no = criar_novo_no(ponto);
-    if (cgrafo->vetor[destino].inicio == NULL)
-    {
-        novo_no->prox = cgrafo->vetor[destino].inicio;
-        cgrafo->vetor[destino].inicio = novo_no;
-    }
-    else
-    {
-        checar = cgrafo->vetor[destino].inicio;
-        while (checar->prox != NULL)
-            checar = checar->prox;
-        checar->prox = novo_no;
-    }
+    struct NO* newNode = (NO *)malloc(sizeof(NO));
+    newNode->destino = dest;
+    newNode->prox = graph->lista_vertices[src];
+    graph->lista_vertices[src] = newNode;
 }
 
-// Imprimir a lista de adjacencia representando o grafo
-void imprimirGrafo(grafo *Grafo)
+void kahnAlgorithm(GRAFO* grafo)
 {
-    for (int i = 0; i < Grafo->tamanho; i++)
-    {
-        no_lista *add = Grafo->vetor[i].inicio;
-        printf("\n lista de adjacencia do vertice %d\n head ", i);
+    int i;
 
-        while (add)
+    // Criação e inicialização da lista de grau de entrada
+    int tam = grafo->tamanho;
+    int indegree[tam];
+    for (int i = 0; i < tam; i++)
+    {
+        indegree[i] = 0;
+    }
+
+    // Verificação dos graus de entrada ao percorrer as listas de adjacência
+    for(i = 0; i < tam; i++)
+    {
+        struct NO* lista = grafo->lista_vertices[i]->adj_list;
+        while (lista)
         {
-            printf("-> %d", add->destino);
-            add = add->prox;
+            int j = lista->destino;
+            indegree[j]++;
+            lista = lista->prox;
         }
-        printf("\n");
     }
-}
 
-INDEGREE *kahnAlgoritm(grafo *Grafo)
-{
-    INDEGREE *indegree = NULL;
-    inicializar_degree(indegree, Grafo->tamanho);
-    INDEGREE *inicio = indegree;
+    // Criação de fila auxiliar para o algoritmo 
+    int fila[tam];
+    int start = 0;
+    int end = -1;
 
-    for(int i = 0; i < Grafo->tamanho; i++)
+    // armazena inicialmente os vertices com grau de entrada 0 (nenhum outro chega até eles)
+    for(i = 0; i < tam; i++)
     {
-
-        no_lista *add = Grafo->vetor[i].inicio;
-
-        while (add)
+        if(indegree[i] == 0)
         {
-            for (int j = 0; i < add->destino; i++)
+            fila[++end] = i;
+        }
+    }
+
+
+    int visto = 0;
+    int ordem_top[tam];
+    while(start <= end)
+    {
+        int u = fila[start++];
+        ordem_top[visto++] = u;
+
+        struct NO* lista = grafo->lista_vertices[u]->adj_list;
+        while(lista)
+        {
+            if(!(--indegree[lista->destino]))
             {
-                indegree = indegree->prox;
+                fila[++end] = lista->destino;
+                lista = lista->prox;
             }
-
-            add = add->prox;
         }
     }
-
-    printf("======== INDEGREE COMPLETO ========\n");
-    if (isEmpty(indegree))
-    {
-        printf("Lista Vazia");
-    }
-    while (indegree != NULL && !isEmpty(indegree))
-    {
-        printf("%d ", indegree->grau);
-        indegree = indegree->prox;
-    }
-    printf("\n================================\n");
 }
+
 
 int main()
 {
-    int tamanho = 5;
-    grafo *Grafo = criar_grafo(tamanho);
-    adicionar_arestas(Grafo, 0, 1);
-    adicionar_arestas(Grafo, 0, 4);
-    adicionar_arestas(Grafo, 1, 2);
-    adicionar_arestas(Grafo, 1, 3);
-    adicionar_arestas(Grafo, 1, 4);
-    adicionar_arestas(Grafo, 2, 3);
-    adicionar_arestas(Grafo, 3, 4);
+    int tamanho = 6;
+    GRAFO *Grafo = createGraph(tamanho);
+    addEdge(Grafo, 0, 1);
+    addEdge(Grafo, 0, 4);
+    addEdge(Grafo, 1, 2);
+    addEdge(Grafo, 1, 3);
+    addEdge(Grafo, 1, 4);
+    addEdge(Grafo, 2, 3);
+    addEdge(Grafo, 3, 4);
 
-    kahnAlgoritm(Grafo);
+    kahnAlgorithm(Grafo);
 
     return 0;
 }
