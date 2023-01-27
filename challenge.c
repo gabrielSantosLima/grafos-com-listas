@@ -144,33 +144,19 @@ void print_provinces(list *provinces)
     }
 }
 
-// void BFS(graph *ngraph, int ini_vert)
-// {
-//     fila *f = criarFila();
-//     Grafo->visitado[ini_vert] = 1;
-//     enfileirar(f, ini_vert);
+int get_grau_saida(graph *ngraph, int vertex)
+{
+    return ngraph->data[vertex]->length;
+}
 
-//     while (!filaVazia(f))
-//     {
-//         imprimirFila(f);
-//         int atual_vert = desenfileirar(f);
-//         printf("Visitado %d\n", atual_vert);
-
-//         no_lista *temp = Grafo->lista_adj[atual_vert];
-
-//         while (temp)
-//         {
-//             int adj_vert = temp->destino;
-
-//             if (Grafo->visitado[adj_vert] == 0)
-//             {
-//                 Grafo->visitado[adj_vert] = 1;
-//                 enfileirar(f, adj_vert);
-//             }
-//             temp = temp->prox;
-//         }
-//     }
-// }
+int get_grau_entrada(graph *ngraph, int vertex)
+{
+    int grau = 0;
+    for (int index = 0; index < ngraph->vertex_size; index++)
+        if (index != vertex && includes(ngraph->data[index], vertex))
+            grau++;
+    return grau;
+}
 
 /*
 - A província-irmã não tem que está na lista
@@ -179,7 +165,19 @@ void print_provinces(list *provinces)
 list *get_provinces(graph *ngraph)
 {
     list *provinces = create_list();
+    for (int index = 1; index <= ngraph->vertex_size; index += 2)
+    {
+        int province1 = index - 1;
+        int province2 = index;
 
+        int grau_province1 = get_grau_entrada(ngraph, province1) + get_grau_saida(ngraph, province1);
+        int grau_province2 = get_grau_entrada(ngraph, province2) + get_grau_saida(ngraph, province2);
+
+        if (grau_province1 > grau_province2)
+            insert_node_list(provinces, province1 + 1);
+        else
+            insert_node_list(provinces, province2 + 1);
+    }
     return provinces;
 }
 
