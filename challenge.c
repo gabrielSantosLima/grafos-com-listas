@@ -139,7 +139,7 @@ void print_provinces(list *provinces)
     node *temp_node = provinces->root;
     while (temp_node != NULL)
     {
-        printf("%d ", temp_node->value);
+        printf("%d\n", temp_node->value);
         temp_node = temp_node->next;
     }
 }
