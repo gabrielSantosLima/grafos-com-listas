@@ -8,44 +8,44 @@ typedef struct NO
 {
     int fonte;
     int destino;
-    int peso;
     struct NO *prox;
 } NO;
 
-typedef struct vertice
+typedef struct VERTICE
 {
     int valor;
     NO *adj_list;
-} vertice;
+} VERTICE;
 
 typedef struct GRAFO
 {
     int tamanho;
-    vertice **lista_vertices;
+    VERTICE **lista_vertices;
 } GRAFO;
 
 // função para criar grafo
-GRAFO *createGraph(int vertices)
+GRAFO *criar_grafo(int tamanho)
 {
-    GRAFO *graph = (GRAFO *)malloc(sizeof(GRAFO));
-    graph->tamanho = vertices;
-
-    graph->lista_vertices = (vertice **)malloc(vertices * sizeof(vertice*));
-
-    for (int i = 0; i < vertices; i++)
+    GRAFO *grafo = (GRAFO *)malloc(sizeof(GRAFO));
+    grafo->tamanho = tamanho;
+    grafo->lista_vertices = (VERTICE **)malloc(tamanho * sizeof(VERTICE *));
+    int i;
+    for (i = 0; i < tamanho; i++)
     {
-        graph->lista_vertices[i]->adj_list = NULL;
+        grafo->lista_vertices[i] = (VERTICE *)malloc(sizeof(VERTICE));
+        grafo->lista_vertices[i]->valor = i;
+        grafo->lista_vertices[i]->adj_list = NULL;
     }
-
-    return graph;
+    return grafo;
 }
 
-void addEdge(GRAFO *graph, int src, int dest)
+void adicionar_vertice(GRAFO *grafo, int fonte, int destino)
 {
-    struct NO* newNode = (NO *)malloc(sizeof(NO));
-    newNode->destino = dest;
-    newNode->prox = graph->lista_vertices[src];
-    graph->lista_vertices[src] = newNode;
+    NO *novo_no = (NO *)malloc(sizeof(NO));
+    novo_no->fonte = fonte;
+    novo_no->destino = destino;
+    novo_no->prox = grafo->lista_vertices[fonte]->adj_list;
+    grafo->lista_vertices[fonte]->adj_list = novo_no;
 }
 
 void kahnAlgorithm(GRAFO* grafo)
@@ -53,7 +53,7 @@ void kahnAlgorithm(GRAFO* grafo)
     int i;
 
     // Criação e inicialização da lista de grau de entrada
-    int tam = grafo->tamanho;
+    const int tam = grafo->tamanho;
     int indegree[tam];
     for (int i = 0; i < tam; i++)
     {
@@ -100,24 +100,31 @@ void kahnAlgorithm(GRAFO* grafo)
             if(!(--indegree[lista->destino]))
             {
                 fila[++end] = lista->destino;
-                lista = lista->prox;
             }
+            lista = lista->prox;
         }
     }
+
+    printf("Ordem topológica:");
+    for(int j = 0; j < grafo->tamanho; j++)
+    {
+        printf("%d -> ", ordem_top[j]);
+    }
+
 }
 
 
 int main()
 {
     int tamanho = 6;
-    GRAFO *Grafo = createGraph(tamanho);
-    addEdge(Grafo, 0, 1);
-    addEdge(Grafo, 0, 4);
-    addEdge(Grafo, 1, 2);
-    addEdge(Grafo, 1, 3);
-    addEdge(Grafo, 1, 4);
-    addEdge(Grafo, 2, 3);
-    addEdge(Grafo, 3, 4);
+    GRAFO *Grafo = criar_grafo(tamanho);
+    adicionar_vertice(Grafo, 0, 1);
+    adicionar_vertice(Grafo, 0, 4);
+    adicionar_vertice(Grafo, 1, 2);
+    adicionar_vertice(Grafo, 1, 3);
+    adicionar_vertice(Grafo, 1, 4);
+    adicionar_vertice(Grafo, 2, 3);
+    adicionar_vertice(Grafo, 3, 4);
 
     kahnAlgorithm(Grafo);
 
