@@ -102,10 +102,12 @@ void imprimirGrafo(Grafo *grafo)
     }
 }
 
-static bool buscar(no_lista* no, bool* visitados, Grafo* grafo)
+enum resultado {nenhum, caminho_hamiltoniano, ciclo_hamiltoniano};
+
+//Retorna sim ou não se os vértices já foram visitados
+static int buscar(no_lista* no, bool* visitados, Grafo* grafo)
 {
-	bool todos_visitados = true;
-	
+	bool todos_visitados = true;	
 	for(int i=0; i < grafo->tamanho; i++)
 	       if(!visitados[i])
 	       {
@@ -113,39 +115,53 @@ static bool buscar(no_lista* no, bool* visitados, Grafo* grafo)
 		       break;
 	       }
 
+	//Checar nessa iteração se todas as vértices já foram visitadas, se sim abortar toda a cadeia de busca.
 	if(todos_visitados)
 	{
 		free(visitados);
-		return true;
+		return caminho_hamiltoniano;
 	}
 
-
+	//Atravessar por todos os vértices vizinhos que ainda não foram visitados
 	do
 	{
+		//este vértice já foi visitado, próximo
 		if(visitados[no->destino])
 			continue;
 
+		//Criar uma cópia da lista visitados, é necessário para que subsequentes recursões não sobrescrevam a mesma lista.
 		bool* novo_visitados = calloc(grafo->tamanho, sizeof(bool));
 
 		for(int i=0; i<grafo->tamanho; i++)
 			novo_visitados[i] = visitados[i];
 
+		//Marcar o vértice [vizinho] como visitado
 		novo_visitados[no->destino] = visitados[no->destino] = true;
 
+		//iniciar busca do grafo vizinho
 		if(buscar(grafo->vetor[no->destino].inicio, novo_visitados, grafo))
 		{
 			free(visitados);
-			return true;
+
+			//Checar o último nó se é vizinho com o nó inicial, se sim tem também ciclo hamiltoniano
+			for(no_lista* node = grafo->vetor[no->destino].inicio; node; node = node->prox)
+				if(node->destino == 0)
+					return ciclo_hamiltoniano;
+
+			//Não é vizinho com nó inicial, só tem caminho hamiltoniano
+			return caminho_hamiltoniano;
 		}
+	} while(no = no->prox);
 
-	} while( no = no->prox);
-
+	//A busca falhou, não há caminho hamiltoniano no grafo.
 	free(visitados);
-	return false;
+	return nenhum;
 }
 
-bool hamiltoniano_grafo(Grafo* grafo)
+//Checar presença de caminho/ciclo hamiltoniano no grafo
+int hamiltoniano_grafo(Grafo* grafo)
 {
+	//Primeira alocação que será copiado por sucessivas chamadas recursivas de buscar()
 	bool* no_visitados = calloc(grafo->tamanho, sizeof(bool));
 
 	for(int i = 0; i < grafo->tamanho; i++)
@@ -153,6 +169,7 @@ bool hamiltoniano_grafo(Grafo* grafo)
 
 	no_visitados[0] = true;
 
+	//Iniciar a árvore de buscar, retornando o resultando assim que terminar.
 	return buscar(grafo->vetor[0].inicio, no_visitados, grafo);
 }
 
@@ -171,10 +188,19 @@ int main()
 
     imprimirGrafo(grafo);
 
-    if(hamiltoniano_grafo(grafo))
-	    puts("Grafo e hamiltoniano");
-    else
-	    puts("Grafo nao e hamiltoniano");
+    switch(hamiltoniano_grafo(grafo))
+    {
+	    case caminho_hamiltoniano:
+		    puts("Grafo tem caminho hamiltoniano");
+		    break;
+	    case ciclo_hamiltoniano:
+		    puts("Grafo tem ciclo hamiltoniano");
+		    break;
+
+	    case nenhum:
+		    puts("Grafo não tem caminho ou ciclo hamiltoniano");
+		    break;
+    }
 
     return 0;
 }
