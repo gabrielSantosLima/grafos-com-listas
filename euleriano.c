@@ -106,8 +106,60 @@ void imprimirGrafo(Grafo *grafo)
     }
 }
 
+//Retorna true se o grafo é conecxo e false caso contrário
+static bool buscar(no_lista* no, bool* visitados, Grafo* grafo)
+{
+	bool todos_visitados = true;	
+	for(int i=0; i < grafo->tamanho; i++)
+	       if(!visitados[i])
+	       {
+		       todos_visitados = false;
+		       break;
+	       }
+
+	//Checar nessa iteração se todas as vértices já foram visitadas, se sim abortar toda a cadeia de busca.
+	if(todos_visitados)
+		return true;
+
+	//Atravessar por todos os vértices vizinhos que ainda não foram visitados
+	do
+	{
+		//este vértice já foi visitado, próximo
+		if(visitados[no->destino])
+			continue;
+
+		//Marcar o vértice [vizinho] como visitado
+		visitados[no->destino] = true;
+
+		//iniciar busca do grafo vizinho
+		if(buscar(grafo->vetor[no->destino].inicio, visitados, grafo))
+			return true;
+
+	} while(no = no->prox);
+
+	//Todos os vértices não foram visitados, desconecxo
+	return false;
+}
+
+
+
+
 bool euleriano_grafo(Grafo* grafo)
 {
+	bool* visitados = calloc(grafo->tamanho, sizeof(bool));
+
+	for(int i = 0; i < grafo->tamanho; i++)
+		visitados[i] = false;
+
+	visitados[0] = true;
+
+	//Iniciar a árvore de busca, retorna true se o grafo é conecxo e false caso contrário
+	bool conectado = buscar(grafo->vetor[0].inicio, visitados, grafo);
+
+	free(visitados);
+	if(!conectado)
+		return false;
+
 	//Teorema de euler: todo grafo com vertices de grau par tem caminho euleriano
 	for(int i=0; i<grafo->tamanho; i++)
 	{
